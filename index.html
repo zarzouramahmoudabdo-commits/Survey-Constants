@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Constants - Mahmoud Zarzoura</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+
+<body>
+
+<div class="home">
+
+  <header class="home-header">
+    <div>
+      <div class="home-brand">SURVEY CONSTANTS</div>
+      <div class="home-name">Mahmoud Zarzoura</div>
+    </div>
+
+    <div class="online-badge">
+      <span></span>
+      جاهز
+    </div>
+  </header>
+
+  <main class="home-content">
+
+    <section class="hero">
+      <div class="hero-icon">📐</div>
+      <div>
+        <h1>الثوابت المساحية</h1>
+        <p>إدارة ثوابت X / Y و Z بسهولة وسرعة</p>
+      </div>
+    </section>
+
+    <section class="quick-search">
+      <div class="search-icon">⌕</div>
+
+      <input
+        id="globalSearch"
+        type="search"
+        placeholder="ابحث عن ثابت، وصف، أو رقم فيلا..."
+      >
+
+      <button id="searchBtn">بحث</button>
+    </section>
+
+    <section class="section-title">
+      <h2>الأقسام الرئيسية</h2>
+      <span>4 أقسام</span>
+    </section>
+
+    <section class="main-grid">
+
+      <button class="main-card xy-card" id="xyBtn">
+        <div class="card-icon">📐</div>
+        <div class="card-text">
+          <strong>X / Y</strong>
+          <small>الثوابت الأفقية والإحداثيات</small>
+        </div>
+        <div class="arrow">‹</div>
+      </button>
+
+      <button class="main-card z-card" id="zBtn">
+        <div class="card-icon">📏</div>
+        <div class="card-text">
+          <strong>Z</strong>
+          <small>المناسيب والارتفاعات</small>
+        </div>
+        <div class="arrow">‹</div>
+      </button>
+
+      <button class="main-card photo-card" id="photosBtn">
+        <div class="card-icon">🖼️</div>
+        <div class="card-text">
+          <strong>الصور والوصف</strong>
+          <small>صور ومعلومات كل ثابت</small>
+        </div>
+        <div class="arrow">‹</div>
+      </button>
+
+      <button class="main-card admin-card" id="adminBtn">
+        <div class="card-icon">🔐</div>
+        <div class="card-text">
+          <strong>لوحة الأدمن</strong>
+          <small>الإعدادات والصلاحيات والمزامنة</small>
+        </div>
+        <div class="arrow">‹</div>
+      </button>
+
+    </section>
+
+    <section class="sync-card">
+
+      <div class="sync-icon">☁️</div>
+
+      <div class="sync-info">
+        <strong>Google Sheets</strong>
+        <small>مصدر البيانات والمزامنة</small>
+      </div>
+
+      <div class="sync-status">
+        <span></span>
+        غير متصل
+      </div>
+
+    </section>
+
+    <section class="stats">
+
+      <div class="stat">
+        <strong id="xyCount">0</strong>
+        <small>ثوابت X/Y</small>
+      </div>
+
+      <div class="stat">
+        <strong id="zCount">0</strong>
+        <small>ثوابت Z</small>
+      </div>
+
+      <div class="stat">
+        <strong>0</strong>
+        <small>صور</small>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <strong>Survey Constants</strong>
+    <span>© 2026 Mahmoud Zarzoura</span>
+  </footer>
+
+</div>
+
+<script>
+
+document.getElementById('xyBtn').onclick = () => {
+  window.location.href = '/xy.html'
+}
+
+document.getElementById('zBtn').onclick = () => {
+  window.location.href = '/z.html'
+}
+
+document.getElementById('photosBtn').onclick = () => {
+  alert('قسم الصور والوصف سيتم تجهيزه')
+}
+
+document.getElementById('adminBtn').onclick = () => {
+  const password = prompt('أدخل كلمة مرور الأدمن')
+
+  if (password === 'admin123') {
+    alert('تم الدخول إلى لوحة الأدمن')
+  } else if (password !== null) {
+    alert('كلمة المرور غير صحيحة')
+  }
+}
+
+document.getElementById('searchBtn').onclick = () => {
+
+  const value =
+    document.getElementById('globalSearch').value.trim()
+
+  if (!value) {
+    alert('اكتب كلمة أو رقم للبحث')
+    return
+  }
+
+  alert('البحث عن: ' + value)
+}
+
+document.getElementById('globalSearch')
+  .addEventListener('keydown', event => {
+
+    if (event.key === 'Enter') {
+      document.getElementById('searchBtn').click()
+    }
+
+  })
+
+const xy =
+  JSON.parse(localStorage.getItem('survey_constants_xy') || '[]')
+
+const z =
+  JSON.parse(localStorage.getItem('survey_constants_z') || '[]')
+
+document.getElementById('xyCount').textContent = xy.length
+document.getElementById('zCount').textContent = z.length
+
+</script>
+
+</body>
+</html>

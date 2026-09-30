@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ثوابت Z - Survey Constants</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+
+<body>
+
+<div class="page">
+
+  <header class="page-header">
+    <button id="backBtn" class="back-btn">رجوع</button>
+
+    <div>
+      <div class="page-brand">SURVEY CONSTANTS</div>
+      <h1>ثوابت Z</h1>
+    </div>
+
+    <button id="addBtn" class="add-btn">+ إضافة</button>
+  </header>
+
+  <main class="page-content">
+
+    <section class="search-box">
+      <span>⌕</span>
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="ابحث برقم الثابت أو الوصف أو رقم الفيلا..."
+      >
+    </section>
+
+    <section class="xy-summary">
+      <div>
+        <strong id="count">0</strong>
+        <small>عدد ثوابت Z</small>
+      </div>
+
+      <div>
+        <strong>Z</strong>
+        <small>المناسيب والارتفاعات</small>
+      </div>
+    </section>
+
+    <section id="constantsList" class="constants-list"></section>
+
+  </main>
+
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <h2 id="modalTitle">إضافة ثابت Z</h2>
+      <button id="closeModal">×</button>
+    </div>
+
+    <label>رقم الثابت</label>
+    <input id="pointNumber" placeholder="مثال: Z-001">
+
+    <label>رقم الفيلا</label>
+    <input id="villaNumber" placeholder="مثال: V-125">
+
+    <label>منسوب Z</label>
+    <input id="zValue" type="number" step="any" placeholder="قيمة Z">
+
+    <label>الوصف</label>
+    <textarea id="description" placeholder="وصف الثابت..."></textarea>
+
+    <button id="saveBtn" class="save-btn">حفظ الثابت</button>
+
+  </div>
+</div>
+
+<script>
+
+const STORAGE_KEY = 'survey_constants_z'
+
+let constants = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+let editingIndex = -1
+
+const list = document.getElementById('constantsList')
+const count = document.getElementById('count')
+const modal = document.getElementById('modal')
+const searchInput = document.getElementById('searchInput')
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(constants))
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+function render(items = constants) {
+
+  count.textContent = items.length
+
+  if (!items.length) {
+    list.innerHTML = `
+      <div class="empty">
+        <div>📏</div>
+        <strong>لا توجد ثوابت Z</strong>
+        <small>اضغط «+ إضافة» لإضافة أول ثابت</small>
+      </div>
+    `
+    return
+  }
+
+  list.innerHTML = items.map(item => {
+
+    const index = constants.indexOf(item)
+
+    return `
+      <article class="constant-card">
+
+        <div class="point-top">
+          <strong>${escapeHtml(item.number)}</strong>
+          <span>${escapeHtml(item.villa || 'بدون فيلا')}</span>
+        </div>
+
+        <div class="coordinates">
+
+          <div>
+            <small>Z</small>
+            <strong>${escapeHtml(item.z)}</strong>
+          </div>
+
+        </div>
+
+        <p>${escapeHtml(item.description || 'بدون وصف')}</p>
+
+        <div class="card-actions">
+
+          <button class="edit-btn" data-index="${index}">
+            ✏️ تعديل
+          </button>
+
+          <button class="delete-btn" data-index="${index}">
+            🗑️ حذف
+          </button>
+
+        </div>
+
+      </article>
+    `
+
+  }).join('')
+
+  document.querySelectorAll('.edit-btn').forEach(button => {
+    button.onclick = () => openEdit(Number(button.dataset.index))
+  })
+
+  document.querySelectorAll('.delete-btn').forEach(button => {
+    button.onclick = () => deleteConstant(Number(button.dataset.index))
+  })
+}
+
+function clearForm() {
+
+  document.getElementById('pointNumber').value = ''
+  document.getElementById('villaNumber').value = ''
+  document.getElementById('zValue').value = ''
+  document.getElementById('description').value = ''
+
+}
+
+function openAdd() {
+
+  editingIndex = -1
+
+  clearForm()
+
+  document.getElementById('modalTitle').textContent = 'إضافة ثابت Z'
+  document.getElementById('saveBtn').textContent = 'حفظ الثابت'
+
+  modal.classList.remove('hidden')
+}
+
+function openEdit(index) {
+
+  const item = constants[index]
+
+  editingIndex = index
+
+  document.getElementById('pointNumber').value = item.number
+  document.getElementById('villaNumber').value = item.villa
+  document.getElementById('zValue').value = item.z
+  document.getElementById('description').value = item.description
+
+  document.getElementById('modalTitle').textContent = 'تعديل ثابت Z'
+  document.getElementById('saveBtn').textContent = 'حفظ التعديل'
+
+  modal.classList.remove('hidden')
+}
+
+function deleteConstant(index) {
+
+  const item = constants[index]
+
+  if (!confirm(`هل تريد حذف الثابت ${item.number}؟`)) {
+    return
+  }
+
+  constants.splice(index, 1)
+
+  saveData()
+
+  performSearch()
+}
+
+function performSearch() {
+
+  const value = searchInput.value.trim().toLowerCase()
+
+  if (!value) {
+    render(constants)
+    return
+  }
+
+  const filtered = constants.filter(item =>
+    `${item.number} ${item.villa} ${item.z} ${item.description}`
+      .toLowerCase()
+      .includes(value)
+  )
+
+  render(filtered)
+}
+
+document.getElementById('addBtn').onclick = openAdd
+
+document.getElementById('closeModal').onclick = () => {
+  modal.classList.add('hidden')
+}
+
+document.getElementById('saveBtn').onclick = () => {
+
+  const number =
+    document.getElementById('pointNumber').value.trim()
+
+  const villa =
+    document.getElementById('villaNumber').value.trim()
+
+  const z =
+    document.getElementById('zValue').value.trim()
+
+  const description =
+    document.getElementById('description').value.trim()
+
+  if (!number || !z) {
+    alert('اكتب رقم الثابت وقيمة Z')
+    return
+  }
+
+  const item = {
+    number,
+    villa,
+    z,
+    description
+  }
+
+  if (editingIndex === -1) {
+    constants.push(item)
+  } else {
+    constants[editingIndex] = item
+  }
+
+  saveData()
+
+  modal.classList.add('hidden')
+
+  clearForm()
+
+  performSearch()
+}
+
+searchInput.addEventListener('input', performSearch)
+
+document.getElementById('backBtn').onclick = () => {
+  window.location.href = '/'
+}
+
+render()
+
+</script>
+
+</body>
+</html>

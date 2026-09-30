@@ -1,0 +1,284 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: Arial, sans-serif;
+  background: #f3f6fa;
+  color: #17202a;
+  direction: rtl;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+.app {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(35, 126, 255, 0.08), transparent 35%),
+    #f3f6fa;
+}
+
+.topbar {
+  background: linear-gradient(135deg, #17202a, #263746);
+  color: #fff;
+  padding: 20px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  direction: ltr;
+}
+
+.subtitle {
+  margin-top: 5px;
+  font-size: 12px;
+  opacity: 0.65;
+  direction: ltr;
+}
+
+.status {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 7px 11px;
+  border-radius: 30px;
+  font-size: 10px;
+}
+
+.content {
+  width: 100%;
+  max-width: 650px;
+  margin: auto;
+  padding: 24px 15px 10px;
+}
+
+.welcome {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.welcome h1 {
+  margin: 0 0 7px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.welcome p {
+  margin: 0;
+  color: #71808d;
+  font-size: 14px;
+}
+
+.search-box {
+  margin-bottom: 14px;
+}
+
+.search-box input {
+  width: 100%;
+  height: 54px;
+  border: 1px solid #e1e7ed;
+  border-radius: 16px;
+  background: #fff;
+  padding: 0 17px;
+  font-size: 14px;
+  outline: none;
+  box-shadow: 0 5px 18px rgba(20, 40, 60, 0.06);
+}
+
+.search-box input:focus {
+  border-color: #4c8bf5;
+  box-shadow: 0 0 0 4px rgba(76, 139, 245, 0.1);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.primary-btn,
+.secondary-btn {
+  min-height: 50px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #2878e8, #155cc1);
+  color: #fff;
+  box-shadow: 0 7px 18px rgba(40, 120, 232, 0.22);
+}
+
+.secondary-btn {
+  background: #fff;
+  color: #344454;
+  border: 1px solid #e1e7ed;
+}
+
+.primary-btn:active,
+.secondary-btn:active,
+.card-actions button:active {
+  transform: scale(0.97);
+}
+
+.constants-list {
+  display: grid;
+  gap: 13px;
+}
+
+.constant-card {
+  background: #fff;
+  border: 1px solid #e7edf2;
+  border-radius: 18px;
+  padding: 17px;
+  box-shadow: 0 5px 18px rgba(20, 40, 60, 0.07);
+}
+
+.constant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+
+.constant-header strong {
+  direction: ltr;
+  font-size: 17px;
+  color: #155cc1;
+}
+
+.constant-header span {
+  background: #eef5ff;
+  color: #356aa8;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.description {
+  color: #596773;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+.coordinates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.coordinates > div {
+  background: #f5f7f9;
+  border-radius: 13px;
+  padding: 12px;
+}
+
+.coordinates small {
+  display: block;
+  color: #87939d;
+  font-size: 11px;
+  margin-bottom: 5px;
+  direction: ltr;
+  text-align: left;
+}
+
+.coordinates strong {
+  display: block;
+  direction: ltr;
+  text-align: left;
+  font-size: 14px;
+  color: #202d38;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.card-actions button {
+  min-height: 42px;
+  border-radius: 11px;
+  background: #f3f6f9;
+  color: #435361;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.empty {
+  background: #fff;
+  border-radius: 16px;
+  padding: 30px 15px;
+  text-align: center;
+  color: #8a969f;
+  border: 1px dashed #d8e0e6;
+}
+
+.info {
+  margin-top: 20px;
+  background: #fff;
+  border: 1px solid #e7edf2;
+  border-radius: 16px;
+  padding: 15px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #465562;
+  font-size: 13px;
+  box-shadow: 0 4px 15px rgba(20, 40, 60, 0.05);
+}
+
+#sheetStatus {
+  color: #89949d;
+  font-size: 11px;
+}
+
+footer {
+  text-align: center;
+  padding: 25px 10px;
+  color: #929da5;
+  font-size: 11px;
+}
+
+@media (max-width: 400px) {
+  .topbar {
+    padding: 16px 13px;
+  }
+
+  .content {
+    padding: 20px 11px 10px;
+  }
+
+  .welcome h1 {
+    font-size: 24px;
+  }
+
+  .brand {
+    font-size: 17px;
+  }
+}
