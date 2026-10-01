@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Survey Constants</string>
+    <string name="title_activity_main">Survey Constants</string>
+    <string name="package_name">com.mahmoudzarzoura.surveyconstants</string>
+    <string name="custom_url_scheme">com.mahmoudzarzoura.surveyconstants</string>
+</resources>
