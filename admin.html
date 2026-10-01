@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101820">
+  <title>لوحة الأدمن - Survey Constants</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+
+<body>
+
+<div class="admin-page">
+
+  <header class="page-header">
+
+    <button id="backBtn" class="back-btn">
+      رجوع
+    </button>
+
+    <div>
+      <div class="page-brand">SURVEY CONSTANTS</div>
+      <h1>لوحة الأدمن</h1>
+    </div>
+
+    <button id="refreshBtn" class="add-btn">
+      تحديث
+    </button>
+
+  </header>
+
+  <main class="page-content">
+
+    <section class="xy-summary">
+
+      <div>
+        <strong id="xyCount">0</strong>
+        <small>ثوابت X / Y</small>
+      </div>
+
+      <div>
+        <strong id="zCount">0</strong>
+        <small>ثوابت Z</small>
+      </div>
+
+    </section>
+
+    <section class="admin-grid">
+
+      <div class="admin-card-box">
+
+        <h3>💾 النسخ الاحتياطي</h3>
+
+        <p>
+          احفظ نسخة من الثوابت والصور على جهازك
+          لاستعادتها لاحقًا.
+        </p>
+
+        <button
+          id="exportBtn"
+          class="admin-action primary"
+        >
+          📥 تصدير نسخة احتياطية
+        </button>
+
+        <button
+          id="importBtn"
+          class="admin-action"
+        >
+          📤 استيراد نسخة احتياطية
+        </button>
+
+        <input
+          id="importFile"
+          type="file"
+          accept=".json,application/json"
+          hidden
+        >
+
+      </div>
+
+      <div class="admin-card-box">
+
+        <h3>☁️ Google Sheets</h3>
+
+        <p>
+          المزامنة السحابية تحتاج إعداد حساب Google
+          وربط API آمن. لا يوجد اتصال سحابي حاليًا.
+        </p>
+
+        <button
+          id="sheetsBtn"
+          class="admin-action"
+        >
+          إعداد المزامنة
+        </button>
+
+      </div>
+
+      <div class="admin-card-box">
+
+        <h3>📊 حالة التخزين</h3>
+
+        <p id="storageInfo">
+          جاري حساب البيانات...
+        </p>
+
+        <button
+          id="refreshStorageBtn"
+          class="admin-action"
+        >
+          تحديث الحالة
+        </button>
+
+      </div>
+
+      <div class="admin-card-box">
+
+        <h3>⚠️ إدارة البيانات</h3>
+
+        <p>
+          حذف البيانات نهائيًا من التخزين المحلي
+          للجهاز. استخدم نسخة احتياطية أولًا.
+        </p>
+
+        <button
+          id="clearBtn"
+          class="admin-action danger"
+        >
+          🗑️ حذف كل البيانات
+        </button>
+
+      </div>
+
+      <div class="admin-card-box">
+
+        <h3>ℹ️ معلومات التطبيق</h3>
+
+        <p>
+          <strong>Survey Constants</strong><br>
+          Mahmoud Zarzoura<br>
+          الإصدار 1.0.0<br>
+          تطبيق إدارة الثوابت المساحية
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+
+const XY_KEY =
+  'survey_constants_xy'
+
+const Z_KEY =
+  'survey_constants_z'
+
+const PHOTO_KEY =
+  'survey_constant_photos'
+
+const SETTINGS_KEY =
+  'survey_constants_settings'
+
+const xyCount =
+  document.getElementById('xyCount')
+
+const zCount =
+  document.getElementById('zCount')
+
+const storageInfo =
+  document.getElementById('storageInfo')
+
+const toast =
+  document.getElementById('toast')
+
+function readArray(key) {
+
+  try {
+
+    const data =
+      JSON.parse(
+        localStorage.getItem(key) || '[]'
+      )
+
+    return Array.isArray(data)
+      ? data
+      : []
+
+  } catch {
+
+    return []
+
+  }
+
+}
+
+function showToast(message) {
+
+  toast.textContent =
+    message
+
+  toast.classList.remove(
+    'hidden'
+  )
+
+  clearTimeout(
+    window.adminToastTimer
+  )
+
+  window.adminToastTimer =
+    setTimeout(() => {
+
+      toast.classList.add(
+        'hidden'
+      )
+
+    }, 1800)
+
+}
+
+function updateStats() {
+
+  const xy =
+    readArray(XY_KEY)
+
+  const z =
+    readArray(Z_KEY)
+
+  const photos =
+    readArray(PHOTO_KEY)
+
+  xyCount.textContent =
+    xy.length
+
+  zCount.textContent =
+    z.length
+
+  const totalChars =
+    JSON.stringify({
+      xy,
+      z,
+      photos
+    }).length
+
+  const approxKb =
+    Math.round(
+      totalChars / 1024
+    )
+
+  storageInfo.innerHTML = `
+    X / Y:
+    <strong>${xy.length}</strong>
+    <br>
+    Z:
+    <strong>${z.length}</strong>
+    <br>
+    الصور:
+    <strong>${photos.length}</strong>
+    <br>
+    الحجم التقريبي:
+    <strong>${approxKb} KB</strong>
+  `
+
+}
+
+function buildBackup() {
+
+  const backup = {
+
+    app:
+      'Survey Constants',
+
+    version:
+      '1.0.0',
+
+    createdAt:
+      new Date().toISOString(),
+
+    xy:
+      readArray(XY_KEY),
+
+    z:
+      readArray(Z_KEY),
+
+    photos:
+      readArray(PHOTO_KEY),
+
+    settings:
+      readSettings()
+
+  }
+
+  return backup
+
+}
+
+function readSettings() {
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(
+        SETTINGS_KEY
+      ) || '{}'
+    )
+
+  } catch {
+
+    return {}
+
+  }
+
+}
+
+function downloadFile(
+  filename,
+  content
+) {
+
+  const blob =
+    new Blob(
+      [content],
+      {
+        type:
+          'application/json;charset=utf-8'
+      }
+    )
+
+  const url =
+    URL.createObjectURL(blob)
+
+  const link =
+    document.createElement('a')
+
+  link.href = url
+  link.download = filename
+
+  document.body.appendChild(link)
+
+  link.click()
+
+  link.remove()
+
+  setTimeout(() => {
+
+    URL.revokeObjectURL(url)
+
+  }, 1000)
+
+}
+
+document
+  .getElementById('exportBtn')
+  .onclick = () => {
+
+    const backup =
+      buildBackup()
+
+    const date =
+      new Date()
+        .toISOString()
+        .slice(0, 10)
+
+    downloadFile(
+      `Survey-Constants-Backup-${date}.json`,
+      JSON.stringify(
+        backup,
+        null,
+        2
+      )
+    )
+
+    showToast(
+      'تم إنشاء النسخة الاحتياطية'
+    )
+
+  }
+
+document
+  .getElementById('importBtn')
+  .onclick = () => {
+
+    document
+      .getElementById('importFile')
+      .click()
+
+  }
+
+document
+  .getElementById('importFile')
+  .addEventListener(
+    'change',
+    event => {
+
+      const file =
+        event.target.files[0]
+
+      if (!file) return
+
+      const reader =
+        new FileReader()
+
+      reader.onload = () => {
+
+        try {
+
+          const data =
+            JSON.parse(
+              reader.result
+            )
+
+          if (
+            !data ||
+            typeof data !== 'object'
+          ) {
+
+            throw new Error(
+              'Invalid backup'
+            )
+
+          }
+
+          if (
+            !Array.isArray(data.xy) ||
+            !Array.isArray(data.z)
+          ) {
+
+            throw new Error(
+              'Invalid backup structure'
+            )
+
+          }
+
+          const confirmed =
+            confirm(
+              'سيتم استبدال البيانات الحالية بالنسخة الاحتياطية. هل تريد المتابعة؟'
+            )
+
+          if (!confirmed) {
+
+            event.target.value = ''
+
+            return
+
+          }
+
+          localStorage.setItem(
+            XY_KEY,
+            JSON.stringify(data.xy)
+          )
+
+          localStorage.setItem(
+            Z_KEY,
+            JSON.stringify(data.z)
+          )
+
+          localStorage.setItem(
+            PHOTO_KEY,
+            JSON.stringify(
+              Array.isArray(data.photos)
+                ? data.photos
+                : []
+            )
+          )
+
+          localStorage.setItem(
+            SETTINGS_KEY,
+            JSON.stringify(
+              data.settings || {}
+            )
+          )
+
+          updateStats()
+
+          showToast(
+            'تم استيراد النسخة بنجاح'
+          )
+
+        } catch {
+
+          alert(
+            'ملف النسخة الاحتياطية غير صالح'
+          )
+
+        }
+
+        event.target.value = ''
+
+      }
+
+      reader.readAsText(file)
+
+    }
+  )
+
+document
+  .getElementById('clearBtn')
+  .onclick = () => {
+
+    const firstConfirm =
+      confirm(
+        'تحذير: سيتم حذف جميع الثوابت والصور من الجهاز. هل أنت متأكد؟'
+      )
+
+    if (!firstConfirm) return
+
+    const secondConfirm =
+      confirm(
+        'تأكيد نهائي: هل تريد حذف كل البيانات؟'
+      )
+
+    if (!secondConfirm) return
+
+    localStorage.removeItem(
+      XY_KEY
+    )
+
+    localStorage.removeItem(
+      Z_KEY
+    )
+
+    localStorage.removeItem(
+      PHOTO_KEY
+    )
+
+    updateStats()
+
+    showToast(
+      'تم حذف كل البيانات'
+    )
+
+  }
+
+document
+  .getElementById('sheetsBtn')
+  .onclick = () => {
+
+    alert(
+      'المزامنة مع Google Sheets تحتاج ربط حساب Google وإعداد API آمن. سيتم تنفيذ الربط بعد تجهيز الاتصال السحابي.'
+    )
+
+  }
+
+document
+  .getElementById('refreshBtn')
+  .onclick =
+  updateStats
+
+document
+  .getElementById('refreshStorageBtn')
+  .onclick =
+  updateStats
+
+document
+  .getElementById('backBtn')
+  .onclick = () => {
+
+    window.location.href =
+      './index.html'
+
+  }
+
+updateStats()
+
+</script>
+
+</body>
+</html>

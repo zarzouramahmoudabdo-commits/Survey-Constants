@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101820">
+  <title>الصور والوصف - Survey Constants</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+
+<body>
+
+<div class="photos-page">
+
+  <header class="page-header">
+
+    <button id="backBtn" class="back-btn">
+      رجوع
+    </button>
+
+    <div>
+      <div class="page-brand">SURVEY CONSTANTS</div>
+      <h1>الصور والوصف</h1>
+    </div>
+
+    <button id="refreshBtn" class="add-btn">
+      تحديث
+    </button>
+
+  </header>
+
+  <main class="page-content">
+
+    <section class="search-box">
+
+      <span>⌕</span>
+
+      <input
+        id="searchInput"
+        type="search"
+        autocomplete="off"
+        placeholder="ابحث برقم الثابت أو الفيلا..."
+      >
+
+    </section>
+
+    <section class="xy-summary">
+
+      <div>
+        <strong id="photoCount">0</strong>
+        <small>إجمالي الصور</small>
+      </div>
+
+      <div>
+        <strong id="pointCount">0</strong>
+        <small>الثوابت المصورة</small>
+      </div>
+
+    </section>
+
+    <section id="photosList" class="photos-grid"></section>
+
+  </main>
+
+</div>
+
+<div id="imageModal" class="modal hidden">
+
+  <div class="modal-card">
+
+    <div class="modal-header">
+
+      <h2 id="imageTitle">الصورة</h2>
+
+      <button id="closeImage">
+        ×
+      </button>
+
+    </div>
+
+    <img
+      id="largeImage"
+      class="photo-large-preview"
+      alt="صورة الثابت"
+    >
+
+    <button
+      id="deletePhotoBtn"
+      class="admin-action danger"
+    >
+      🗑️ حذف الصورة
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+
+const PHOTO_KEY =
+  'survey_constant_photos'
+
+let photos = readPhotos()
+
+let selectedPhotoId = null
+
+const list =
+  document.getElementById('photosList')
+
+const searchInput =
+  document.getElementById('searchInput')
+
+const imageModal =
+  document.getElementById('imageModal')
+
+const largeImage =
+  document.getElementById('largeImage')
+
+const imageTitle =
+  document.getElementById('imageTitle')
+
+const photoCount =
+  document.getElementById('photoCount')
+
+const pointCount =
+  document.getElementById('pointCount')
+
+function readPhotos() {
+
+  try {
+
+    const data =
+      JSON.parse(
+        localStorage.getItem(PHOTO_KEY) || '[]'
+      )
+
+    return Array.isArray(data) ? data : []
+
+  } catch {
+
+    return []
+
+  }
+
+}
+
+function savePhotos() {
+
+  localStorage.setItem(
+    PHOTO_KEY,
+    JSON.stringify(photos)
+  )
+
+}
+
+function escapeHtml(value) {
+
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+}
+
+function render() {
+
+  const value =
+    searchInput.value
+      .trim()
+      .toLowerCase()
+
+  const filtered =
+    photos.filter(photo => {
+
+      if (!value) return true
+
+      return [
+        photo.pointNumber,
+        photo.name
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(value)
+
+    })
+
+  photoCount.textContent =
+    photos.length
+
+  pointCount.textContent =
+    new Set(
+      photos.map(photo =>
+        String(photo.pointNumber)
+      )
+    ).size
+
+  if (!filtered.length) {
+
+    list.innerHTML = `
+      <div class="empty">
+
+        <div>🖼️</div>
+
+        <strong>لا توجد صور</strong>
+
+        <small>
+          الصور التي تضيفها للثوابت ستظهر هنا
+        </small>
+
+      </div>
+    `
+
+    return
+
+  }
+
+  list.innerHTML =
+    filtered.map(photo => {
+
+      return `
+        <article
+          class="photo-card-box"
+        >
+
+          <img
+            src="${photo.data}"
+            class="photo-large-preview"
+            alt="صورة ${escapeHtml(photo.pointNumber)}"
+            data-photo-id="${escapeHtml(photo.id)}"
+          >
+
+          <h3>
+            ثابت:
+            ${escapeHtml(photo.pointNumber)}
+          </h3>
+
+          <p>
+            ${escapeHtml(photo.name || 'صورة')}
+          </p>
+
+          <button
+            class="admin-action primary"
+            data-photo-id="${escapeHtml(photo.id)}"
+          >
+            عرض الصورة
+          </button>
+
+        </article>
+      `
+
+    }).join('')
+
+  list
+    .querySelectorAll('[data-photo-id]')
+    .forEach(element => {
+
+      element.onclick = () => {
+
+        openPhoto(
+          element.dataset.photoId
+        )
+
+      }
+
+    })
+
+}
+
+function openPhoto(id) {
+
+  const photo =
+    photos.find(item =>
+      String(item.id) === String(id)
+    )
+
+  if (!photo) return
+
+  selectedPhotoId =
+    photo.id
+
+  imageTitle.textContent =
+    `صورة الثابت ${photo.pointNumber}`
+
+  largeImage.src =
+    photo.data
+
+  imageModal.classList.remove(
+    'hidden'
+  )
+
+}
+
+function closeModal() {
+
+  imageModal.classList.add(
+    'hidden'
+  )
+
+  largeImage.removeAttribute(
+    'src'
+  )
+
+  selectedPhotoId = null
+
+}
+
+document
+  .getElementById('backBtn')
+  .onclick = () => {
+
+    window.location.href =
+      './index.html'
+
+  }
+
+document
+  .getElementById('refreshBtn')
+  .onclick = () => {
+
+    photos = readPhotos()
+
+    render()
+
+  }
+
+document
+  .getElementById('closeImage')
+  .onclick =
+  closeModal
+
+imageModal.addEventListener(
+  'click',
+  event => {
+
+    if (
+      event.target ===
+      imageModal
+    ) {
+
+      closeModal()
+
+    }
+
+  }
+)
+
+document
+  .getElementById('deletePhotoBtn')
+  .onclick = () => {
+
+    if (!selectedPhotoId) return
+
+    const photo =
+      photos.find(item =>
+        String(item.id) ===
+        String(selectedPhotoId)
+      )
+
+    if (!photo) return
+
+    const confirmed =
+      confirm(
+        `هل تريد حذف صورة الثابت ${photo.pointNumber}؟`
+      )
+
+    if (!confirmed) return
+
+    photos =
+      photos.filter(item =>
+        String(item.id) !==
+        String(selectedPhotoId)
+      )
+
+    savePhotos()
+
+    closeModal()
+
+    render()
+
+  }
+
+searchInput.addEventListener(
+  'input',
+  render
+)
+
+render()
+
+</script>
+
+</body>
+</html>

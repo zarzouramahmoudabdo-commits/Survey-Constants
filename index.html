@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101820">
   <title>Survey Constants - Mahmoud Zarzoura</title>
-  <link rel="stylesheet" href="/src/style.css">
+  <link rel="stylesheet" href="./src/style.css">
 </head>
 
 <body>
@@ -27,23 +28,29 @@
 
     <section class="hero">
       <div class="hero-icon">📐</div>
+
       <div>
         <h1>الثوابت المساحية</h1>
-        <p>إدارة ثوابت X / Y و Z بسهولة وسرعة</p>
+        <p>إدارة ثوابت X / Y و Z والصور والبيانات بسهولة</p>
       </div>
     </section>
 
     <section class="quick-search">
+
       <div class="search-icon">⌕</div>
 
       <input
         id="globalSearch"
         type="search"
-        placeholder="ابحث عن ثابت، وصف، أو رقم فيلا..."
+        autocomplete="off"
+        placeholder="ابحث عن ثابت، وصف، إحداثي، أو رقم فيلا..."
       >
 
       <button id="searchBtn">بحث</button>
+
     </section>
+
+    <section id="searchResults" class="home-search-results hidden"></section>
 
     <section class="section-title">
       <h2>الأقسام الرئيسية</h2>
@@ -53,39 +60,55 @@
     <section class="main-grid">
 
       <button class="main-card xy-card" id="xyBtn">
+
         <div class="card-icon">📐</div>
+
         <div class="card-text">
           <strong>X / Y</strong>
           <small>الثوابت الأفقية والإحداثيات</small>
         </div>
+
         <div class="arrow">‹</div>
+
       </button>
 
       <button class="main-card z-card" id="zBtn">
+
         <div class="card-icon">📏</div>
+
         <div class="card-text">
           <strong>Z</strong>
           <small>المناسيب والارتفاعات</small>
         </div>
+
         <div class="arrow">‹</div>
+
       </button>
 
       <button class="main-card photo-card" id="photosBtn">
+
         <div class="card-icon">🖼️</div>
+
         <div class="card-text">
           <strong>الصور والوصف</strong>
-          <small>صور ومعلومات كل ثابت</small>
+          <small>إدارة صور ومعلومات الثوابت</small>
         </div>
+
         <div class="arrow">‹</div>
+
       </button>
 
       <button class="main-card admin-card" id="adminBtn">
+
         <div class="card-icon">🔐</div>
+
         <div class="card-text">
           <strong>لوحة الأدمن</strong>
-          <small>الإعدادات والصلاحيات والمزامنة</small>
+          <small>النسخ الاحتياطي والإعدادات والبيانات</small>
         </div>
+
         <div class="arrow">‹</div>
+
       </button>
 
     </section>
@@ -96,11 +119,11 @@
 
       <div class="sync-info">
         <strong>Google Sheets</strong>
-        <small>مصدر البيانات والمزامنة</small>
+        <small>المزامنة السحابية</small>
       </div>
 
       <div class="sync-status">
-        <span></span>
+        <span class="sync-offline-dot"></span>
         غير متصل
       </div>
 
@@ -119,8 +142,19 @@
       </div>
 
       <div class="stat">
-        <strong>0</strong>
+        <strong id="photoCount">0</strong>
         <small>صور</small>
+      </div>
+
+    </section>
+
+    <section class="data-info">
+
+      <div class="data-info-icon">💾</div>
+
+      <div>
+        <strong>حفظ محلي</strong>
+        <small>بياناتك محفوظة على الجهاز ويمكن عمل نسخة احتياطية من لوحة الأدمن.</small>
       </div>
 
     </section>
@@ -134,60 +168,260 @@
 
 </div>
 
+<div id="toast" class="toast hidden"></div>
+
 <script>
 
-document.getElementById('xyBtn').onclick = () => {
-  window.location.href = '/xy.html'
-}
+const XY_KEY = 'survey_constants_xy'
+const Z_KEY = 'survey_constants_z'
+const PHOTO_KEY = 'survey_constant_photos'
 
-document.getElementById('zBtn').onclick = () => {
-  window.location.href = '/z.html'
-}
-
-document.getElementById('photosBtn').onclick = () => {
-  alert('قسم الصور والوصف سيتم تجهيزه')
-}
-
-document.getElementById('adminBtn').onclick = () => {
-  const password = prompt('أدخل كلمة مرور الأدمن')
-
-  if (password === 'admin123') {
-    alert('تم الدخول إلى لوحة الأدمن')
-  } else if (password !== null) {
-    alert('كلمة المرور غير صحيحة')
+function readStorage(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || '[]')
+  } catch {
+    return []
   }
 }
 
-document.getElementById('searchBtn').onclick = () => {
+function normalize(value) {
+  return String(value ?? '').toLowerCase().trim()
+}
 
-  const value =
-    document.getElementById('globalSearch').value.trim()
+function goTo(page) {
+  window.location.href = `./${page}`
+}
+
+function showToast(message) {
+
+  const toast = document.getElementById('toast')
+
+  toast.textContent = message
+  toast.classList.remove('hidden')
+
+  clearTimeout(window.toastTimer)
+
+  window.toastTimer = setTimeout(() => {
+    toast.classList.add('hidden')
+  }, 1800)
+}
+
+function updateStats() {
+
+  const xy = readStorage(XY_KEY)
+  const z = readStorage(Z_KEY)
+  const photos = readStorage(PHOTO_KEY)
+
+  document.getElementById('xyCount').textContent = xy.length
+  document.getElementById('zCount').textContent = z.length
+
+  let photoCount = 0
+
+  if (Array.isArray(photos)) {
+    photoCount = photos.length
+  }
+
+  document.getElementById('photoCount').textContent = photoCount
+}
+
+function escapeHtml(value) {
+
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+}
+
+function searchAll() {
+
+  const input = document.getElementById('globalSearch')
+  const resultsBox = document.getElementById('searchResults')
+
+  const value = normalize(input.value)
 
   if (!value) {
-    alert('اكتب كلمة أو رقم للبحث')
+
+    resultsBox.classList.add('hidden')
+    resultsBox.innerHTML = ''
+
     return
   }
 
-  alert('البحث عن: ' + value)
+  const xy = readStorage(XY_KEY)
+  const z = readStorage(Z_KEY)
+
+  const xyResults = xy.filter(item => {
+
+    const text = [
+      item.number,
+      item.villa,
+      item.x,
+      item.y,
+      item.description
+    ].join(' ')
+
+    return normalize(text).includes(value)
+
+  })
+
+  const zResults = z.filter(item => {
+
+    const text = [
+      item.number,
+      item.villa,
+      item.z,
+      item.description
+    ].join(' ')
+
+    return normalize(text).includes(value)
+
+  })
+
+  const total = xyResults.length + zResults.length
+
+  if (!total) {
+
+    resultsBox.innerHTML = `
+      <div class="home-search-empty">
+        <div>🔎</div>
+        <strong>لا توجد نتائج</strong>
+        <small>جرّب البحث برقم الثابت أو الفيلا أو الإحداثيات</small>
+      </div>
+    `
+
+    resultsBox.classList.remove('hidden')
+
+    return
+  }
+
+  let html = `
+    <div class="home-search-header">
+      <strong>نتائج البحث</strong>
+      <span>${total} نتيجة</span>
+    </div>
+  `
+
+  xyResults.forEach(item => {
+
+    html += `
+      <button
+        class="home-result-card"
+        data-page="xy.html"
+      >
+
+        <div class="home-result-type">X / Y</div>
+
+        <div class="home-result-main">
+
+          <strong>${escapeHtml(item.number)}</strong>
+
+          <span>
+            ${escapeHtml(item.villa || 'بدون فيلا')}
+          </span>
+
+        </div>
+
+        <div class="home-result-values">
+          X: ${escapeHtml(item.x)}
+          &nbsp; | &nbsp;
+          Y: ${escapeHtml(item.y)}
+        </div>
+
+      </button>
+    `
+
+  })
+
+  zResults.forEach(item => {
+
+    html += `
+      <button
+        class="home-result-card"
+        data-page="z.html"
+      >
+
+        <div class="home-result-type z-result">Z</div>
+
+        <div class="home-result-main">
+
+          <strong>${escapeHtml(item.number)}</strong>
+
+          <span>
+            ${escapeHtml(item.villa || 'بدون فيلا')}
+          </span>
+
+        </div>
+
+        <div class="home-result-values">
+          Z: ${escapeHtml(item.z)}
+        </div>
+
+      </button>
+    `
+
+  })
+
+  resultsBox.innerHTML = html
+  resultsBox.classList.remove('hidden')
+
+  resultsBox
+    .querySelectorAll('.home-result-card')
+    .forEach(button => {
+
+      button.onclick = () => {
+        goTo(button.dataset.page)
+      }
+
+    })
+
 }
 
-document.getElementById('globalSearch')
+document.getElementById('xyBtn').onclick = () => {
+  goTo('xy.html')
+}
+
+document.getElementById('zBtn').onclick = () => {
+  goTo('z.html')
+}
+
+document.getElementById('photosBtn').onclick = () => {
+  window.location.href = './photos.html'
+}
+
+document.getElementById('adminBtn').onclick = () => {
+  window.location.href = './admin.html'
+}
+
+document.getElementById('searchBtn').onclick = searchAll
+
+document
+  .getElementById('globalSearch')
   .addEventListener('keydown', event => {
 
     if (event.key === 'Enter') {
-      document.getElementById('searchBtn').click()
+      searchAll()
     }
 
   })
 
-const xy =
-  JSON.parse(localStorage.getItem('survey_constants_xy') || '[]')
+document
+  .getElementById('globalSearch')
+  .addEventListener('input', event => {
 
-const z =
-  JSON.parse(localStorage.getItem('survey_constants_z') || '[]')
+    if (!event.target.value.trim()) {
+      document
+        .getElementById('searchResults')
+        .classList.add('hidden')
+    }
 
-document.getElementById('xyCount').textContent = xy.length
-document.getElementById('zCount').textContent = z.length
+  })
+
+updateStats()
+
+window.addEventListener('pageshow', updateStats)
 
 </script>
 
