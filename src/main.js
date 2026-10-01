@@ -48,6 +48,8 @@ document.querySelector('#app').innerHTML = `
 
   </div>
 
+  <div id="toast" class="toast hidden"></div>
+
   <div id="modal" class="modal hidden">
     <div class="modal-card">
 
@@ -81,6 +83,7 @@ const list = document.getElementById('constantsList')
 const count = document.getElementById('count')
 const modal = document.getElementById('modal')
 const searchInput = document.getElementById('searchInput')
+const toast = document.getElementById('toast')
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(constants))
@@ -93,6 +96,34 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
+}
+
+async function copyCoordinate(value, axis) {
+  try {
+    await navigator.clipboard.writeText(String(value))
+
+    toast.textContent = `تم نسخ ${axis}`
+    toast.classList.remove('hidden')
+
+    setTimeout(() => {
+      toast.classList.add('hidden')
+    }, 1500)
+
+  } catch (error) {
+    const textArea = document.createElement('textarea')
+    textArea.value = String(value)
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    textArea.remove()
+
+    toast.textContent = `تم نسخ ${axis}`
+    toast.classList.remove('hidden')
+
+    setTimeout(() => {
+      toast.classList.add('hidden')
+    }, 1500)
+  }
 }
 
 function render(items = constants) {
@@ -121,15 +152,27 @@ function render(items = constants) {
         </div>
 
         <div class="coordinates">
-          <div>
+
+          <button
+            class="coordinate-copy"
+            data-value="${escapeHtml(item.x)}"
+            data-axis="X"
+          >
             <small>X</small>
             <strong>${escapeHtml(item.x)}</strong>
-          </div>
+            <span>📋</span>
+          </button>
 
-          <div>
+          <button
+            class="coordinate-copy"
+            data-value="${escapeHtml(item.y)}"
+            data-axis="Y"
+          >
             <small>Y</small>
             <strong>${escapeHtml(item.y)}</strong>
-          </div>
+            <span>📋</span>
+          </button>
+
         </div>
 
         <p>${escapeHtml(item.description || 'بدون وصف')}</p>
@@ -147,6 +190,15 @@ function render(items = constants) {
       </article>
     `
   }).join('')
+
+  document.querySelectorAll('.coordinate-copy').forEach(button => {
+    button.onclick = () => {
+      copyCoordinate(
+        button.dataset.value,
+        button.dataset.axis
+      )
+    }
+  })
 
   document.querySelectorAll('.edit-btn').forEach(button => {
     button.onclick = () => {
