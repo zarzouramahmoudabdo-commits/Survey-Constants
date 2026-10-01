@@ -86,6 +86,15 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(constants))
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
 function render(items = constants) {
   count.textContent = items.length
 
@@ -140,21 +149,16 @@ function render(items = constants) {
   }).join('')
 
   document.querySelectorAll('.edit-btn').forEach(button => {
-    button.onclick = () => openEdit(Number(button.dataset.index))
+    button.onclick = () => {
+      openEdit(Number(button.dataset.index))
+    }
   })
 
   document.querySelectorAll('.delete-btn').forEach(button => {
-    button.onclick = () => deleteConstant(Number(button.dataset.index))
+    button.onclick = () => {
+      deleteConstant(Number(button.dataset.index))
+    }
   })
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;')
 }
 
 function clearForm() {
@@ -167,31 +171,53 @@ function clearForm() {
 
 function openAdd() {
   editingIndex = -1
+
   clearForm()
-  document.getElementById('modalTitle').textContent = 'إضافة ثابت X / Y'
-  document.getElementById('saveBtn').textContent = 'حفظ الثابت'
+
+  document.getElementById('modalTitle').textContent =
+    'إضافة ثابت X / Y'
+
+  document.getElementById('saveBtn').textContent =
+    'حفظ الثابت'
+
   modal.classList.remove('hidden')
 }
 
 function openEdit(index) {
   const item = constants[index]
 
+  if (!item) return
+
   editingIndex = index
 
-  document.getElementById('pointNumber').value = item.number
-  document.getElementById('villaNumber').value = item.villa
-  document.getElementById('xValue').value = item.x
-  document.getElementById('yValue').value = item.y
-  document.getElementById('description').value = item.description
+  document.getElementById('pointNumber').value =
+    item.number || ''
 
-  document.getElementById('modalTitle').textContent = 'تعديل ثابت X / Y'
-  document.getElementById('saveBtn').textContent = 'حفظ التعديل'
+  document.getElementById('villaNumber').value =
+    item.villa || ''
+
+  document.getElementById('xValue').value =
+    item.x ?? ''
+
+  document.getElementById('yValue').value =
+    item.y ?? ''
+
+  document.getElementById('description').value =
+    item.description || ''
+
+  document.getElementById('modalTitle').textContent =
+    'تعديل ثابت X / Y'
+
+  document.getElementById('saveBtn').textContent =
+    'حفظ التعديل'
 
   modal.classList.remove('hidden')
 }
 
 function deleteConstant(index) {
   const item = constants[index]
+
+  if (!item) return
 
   const confirmed = confirm(
     `هل تريد حذف الثابت ${item.number}؟`
@@ -200,6 +226,7 @@ function deleteConstant(index) {
   if (!confirmed) return
 
   constants.splice(index, 1)
+
   saveData()
   performSearch()
 }
@@ -213,7 +240,11 @@ function performSearch() {
   }
 
   const filtered = constants.filter(item =>
-    `${item.number} ${item.villa} ${item.x} ${item.y} ${item.description}`
+    `${item.number || ''}
+     ${item.villa || ''}
+     ${item.x || ''}
+     ${item.y || ''}
+     ${item.description || ''}`
       .toLowerCase()
       .includes(value)
   )
@@ -228,11 +259,20 @@ document.getElementById('closeModal').onclick = () => {
 }
 
 document.getElementById('saveBtn').onclick = () => {
-  const number = document.getElementById('pointNumber').value.trim()
-  const villa = document.getElementById('villaNumber').value.trim()
-  const x = document.getElementById('xValue').value.trim()
-  const y = document.getElementById('yValue').value.trim()
-  const description = document.getElementById('description').value.trim()
+  const number =
+    document.getElementById('pointNumber').value.trim()
+
+  const villa =
+    document.getElementById('villaNumber').value.trim()
+
+  const x =
+    document.getElementById('xValue').value.trim()
+
+  const y =
+    document.getElementById('yValue').value.trim()
+
+  const description =
+    document.getElementById('description').value.trim()
 
   if (!number || !x || !y) {
     alert('اكتب رقم الثابت و X و Y')
@@ -257,6 +297,7 @@ document.getElementById('saveBtn').onclick = () => {
 
   modal.classList.add('hidden')
   clearForm()
+  editingIndex = -1
   performSearch()
 }
 
