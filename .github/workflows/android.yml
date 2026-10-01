@@ -31,7 +31,9 @@ jobs:
         run: |
           node -v
           npm -v
-        
+      - name: Install dependencies
+        run: npm ci  
+     
       - name: Build web app
         run: npm run build
 
