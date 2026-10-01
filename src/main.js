@@ -263,7 +263,7 @@ document.getElementById('saveBtn').onclick = () => {
 searchInput.addEventListener('input', performSearch)
 
 document.getElementById('backBtn').onclick = () => {
-  location.reload()
+  window.location.href = './index.html'
 }
 
 render()
