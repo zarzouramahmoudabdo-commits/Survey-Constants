@@ -1150,3 +1150,23 @@ footer strong {
   white-space: normal;
   word-break: break-word;
 }
+
+/* زر إضافة ثابت - واضح دائمًا */
+.page-header .add-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 20;
+}
+
