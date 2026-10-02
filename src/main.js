@@ -569,32 +569,94 @@ function openEdit(index) {
 
 }
 
-function deleteConstant(index) {
+async function deleteConstant(index) {
 
-  const item = constants[index]
+  const item =
+    constants[index]
 
   if (!item) return
 
-  const confirmed = confirm(
-    `هل تريد حذف الثابت ${item.number}؟`
-  )
+  const confirmed =
+    confirm(
+      `هل تريد حذف الثابت ${item.number}؟`
+    )
 
   if (!confirmed) return
 
-  constants.splice(index, 1)
+  const number =
+    item.number
 
-  photos =
-    photos.filter(photo =>
-      String(photo.pointNumber) !==
-      String(item.number)
+  let synced = false
+
+  try {
+
+    if (
+      window.SurveyCloud &&
+      typeof window.SurveyCloud.deletePoint ===
+        'function'
+    ) {
+
+      synced =
+        await window.SurveyCloud.deletePoint(
+          number
+        )
+
+      constants =
+        readArray(STORAGE_KEY)
+
+    } else {
+
+      constants =
+        constants.filter(
+          (_, i) => i !== index
+        )
+
+      saveArray(
+        STORAGE_KEY,
+        constants
+      )
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      'Cloud delete:',
+      error
     )
 
-  saveArray(STORAGE_KEY, constants)
-  saveArray(PHOTO_KEY, photos)
+  }
+
+  /*
+   * الصور تظل محلية ويتم حذف صور الثابت المحذوف.
+   */
+  photos =
+    photos.filter(
+      photo =>
+        String(photo.pointNumber) !==
+        String(number)
+    )
+
+  saveArray(
+    PHOTO_KEY,
+    photos
+  )
 
   performSearch()
 
-  showToast('تم حذف الثابت')
+  if (synced) {
+
+    showToast(
+      'تم حذف الثابت ومزامنته بنجاح'
+    )
+
+  } else {
+
+    showToast(
+      'تم حذف الثابت من الجهاز — تعذرت المزامنة السحابية'
+    )
+
+  }
 
 }
 
@@ -748,41 +810,10 @@ async function saveCurrentPoint() {
       ? constants[editingIndex]?.number
       : null
 
-  if (editingIndex === -1) {
-
-    constants.push(item)
-
-  } else {
-
-    constants[editingIndex] = item
-
-    if (
-      oldNumber &&
-      String(oldNumber) !== String(number)
-    ) {
-
-      photos = photos.map(photo => {
-
-        if (
-          String(photo.pointNumber) ===
-          String(oldNumber)
-        ) {
-
-          return {
-            ...photo,
-            pointNumber: number
-          }
-
-        }
-
-        return photo
-
-      })
-
-    }
-
-  }
-
+  /*
+   * نحفظ الصور محليًا أولًا.
+   * الصور لا تدخل Google Sheets.
+   */
   try {
 
     if (photoInput.files.length) {
@@ -806,19 +837,105 @@ async function saveCurrentPoint() {
 
   }
 
-  saveArray(STORAGE_KEY, constants)
-  saveArray(PHOTO_KEY, photos)
+  /*
+   * لو المزامنة السحابية موجودة:
+   * نسحب أحدث نسخة من Google Sheets،
+   * ثم نطبق هذا التغيير فقط.
+   */
+  let synced = false
 
-  // رفع البيانات الجديدة إلى Google Sheets
   try {
+
     if (
       window.SurveyCloud &&
-      typeof window.SurveyCloud.push === 'function'
+      typeof window.SurveyCloud.savePointChange ===
+        'function'
     ) {
-      await window.SurveyCloud.push()
+
+      synced =
+        await window.SurveyCloud.savePointChange(
+          item,
+          oldNumber
+        )
+
+      /*
+       * savePointChange كتب أحدث نسخة في localStorage.
+       * لذلك نعيد قراءتها بدل الاعتماد على نسخة قديمة.
+       */
+      constants =
+        readArray(STORAGE_KEY)
+
+    } else {
+
+      /*
+       * وضع احتياطي إذا لم تكن المزامنة متاحة.
+       */
+      if (editingIndex === -1) {
+
+        constants.push(item)
+
+      } else {
+
+        constants[editingIndex] = item
+
+      }
+
+      saveArray(
+        STORAGE_KEY,
+        constants
+      )
+
     }
+
   } catch (error) {
-    console.warn('Cloud sync after save:', error)
+
+    console.warn(
+      'Cloud sync after save:',
+      error
+    )
+
+  }
+
+  /*
+   * تحديث الصور محليًا إذا تم تغيير رقم الثابت.
+   */
+  if (
+    editingIndex >= 0 &&
+    oldNumber &&
+    String(oldNumber) !== String(number)
+  ) {
+
+    photos =
+      photos.map(photo => {
+
+        if (
+          String(photo.pointNumber) ===
+          String(oldNumber)
+        ) {
+
+          return {
+            ...photo,
+            pointNumber: number
+          }
+
+        }
+
+        return photo
+
+      })
+
+    saveArray(
+      PHOTO_KEY,
+      photos
+    )
+
+  } else {
+
+    saveArray(
+      PHOTO_KEY,
+      photos
+    )
+
   }
 
   modal.classList.add('hidden')
@@ -829,7 +946,19 @@ async function saveCurrentPoint() {
 
   performSearch()
 
-  showToast('تم حفظ الثابت بنجاح')
+  if (synced) {
+
+    showToast(
+      'تم حفظ الثابت ومزامنته بنجاح'
+    )
+
+  } else {
+
+    showToast(
+      'تم حفظ الثابت على الجهاز — تعذرت المزامنة السحابية'
+    )
+
+  }
 
 }
 

@@ -5,189 +5,210 @@
   const Z_KEY = 'survey_constants_z';
   const SETTINGS_KEY = 'survey_constants_settings';
 
+  const DEFAULT_API_URL =
+    'https://script.google.com/macros/s/AKfycbwtXRr5GaMurhsnz9pqvpqdcytmsceuDrhYbkxcl7_I8x6uQ07yIpSCdA_HdbCOjMxD/exec';
+
   let pulling = false;
   let pushing = false;
-  let pushTimer = null;
+  let initialized = false;
+  let suppressAutoPush = false;
+
+  const originalSetItem =
+    localStorage.setItem.bind(localStorage);
+
+  const originalRemoveItem =
+    localStorage.removeItem.bind(localStorage);
 
   function getApiUrl() {
-
     try {
+      const settings = JSON.parse(
+        localStorage.getItem(SETTINGS_KEY) || '{}'
+      );
 
-      const settings =
-        JSON.parse(
-          localStorage.getItem(SETTINGS_KEY) || '{}'
-        );
-
-      return (
-        settings.apiUrl || 'https://script.google.com/macros/s/AKfycbwtXRr5GaMurhsnz9pqvpqdcytmsceuDrhYbkxcl7_I8x6uQ07yIpSCdA_HdbCOjMxD/exec'
+      return String(
+        settings.apiUrl || DEFAULT_API_URL
       ).trim();
 
     } catch {
-
-      return '';
-
+      return DEFAULT_API_URL;
     }
-
   }
 
   function read(key, fallback) {
-
     try {
-
-      const value =
-        localStorage.getItem(key);
+      const value = localStorage.getItem(key);
 
       return value
         ? JSON.parse(value)
         : fallback;
 
     } catch {
-
       return fallback;
-
     }
-
-  }
-
-  function getXY() {
-    return read(XY_KEY, []);
-  }
-
-  function getZ() {
-    return read(Z_KEY, []);
   }
 
   function normalizePoint(p) {
-
     return {
-
       number:
-        p.number != null
+        p?.number != null
           ? p.number
-          : (p.num != null
-              ? p.num
-              : ''),
+          : (p?.num != null ? p.num : ''),
 
       villa:
-        p.villa != null
+        p?.villa != null
           ? p.villa
           : '',
 
       x:
-        p.x != null
+        p?.x != null
           ? p.x
-          : (p.E != null ? p.E : ''),
+          : (p?.E != null ? p.E : ''),
 
       y:
-        p.y != null
+        p?.y != null
           ? p.y
-          : (p.N != null ? p.N : ''),
+          : (p?.N != null ? p.N : ''),
 
       description:
-        p.description != null
+        p?.description != null
           ? p.description
-          : (p.desc != null
-              ? p.desc
-              : '')
-
+          : (p?.desc != null ? p.desc : '')
     };
-
   }
 
   function normalizeBench(b) {
-
     return {
-
       id:
-        b.id != null
+        b?.id != null
           ? b.id
           : '',
 
       desc:
-        b.desc != null
+        b?.desc != null
           ? b.desc
           : '',
 
       Z:
-        b.Z != null
+        b?.Z != null
           ? b.Z
           : ''
-
     };
+  }
 
+  function samePoint(a, b) {
+    const an = String(
+      a?.number ?? ''
+    ).trim();
+
+    const bn = String(
+      b?.number ?? ''
+    ).trim();
+
+    return an !== '' && an === bn;
+  }
+
+  function sameBench(a, b) {
+    const ai = String(
+      a?.id ?? ''
+    ).trim();
+
+    const bi = String(
+      b?.id ?? ''
+    ).trim();
+
+    return ai !== '' && ai === bi;
+  }
+
+  async function fetchCloudData() {
+    const API_URL = getApiUrl();
+
+    if (!API_URL) {
+      throw new Error(
+        'رابط Google Sheets غير موجود'
+      );
+    }
+
+    const response = await fetch(
+      API_URL + '?t=' + Date.now(),
+      {
+        method: 'GET',
+        cache: 'no-store'
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        'HTTP ' + response.status
+      );
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return {
+      points:
+        Array.isArray(data.points)
+          ? data.points.map(normalizePoint)
+          : [],
+
+      benches:
+        Array.isArray(data.benches)
+          ? data.benches.map(normalizeBench)
+          : []
+    };
+  }
+
+  function writeLocal(points, benches) {
+    const previous =
+      suppressAutoPush;
+
+    suppressAutoPush = true;
+
+    try {
+      originalSetItem(
+        XY_KEY,
+        JSON.stringify(
+          points.map(normalizePoint)
+        )
+      );
+
+      originalSetItem(
+        Z_KEY,
+        JSON.stringify(
+          benches.map(normalizeBench)
+        )
+      );
+
+    } finally {
+      suppressAutoPush = previous;
+    }
   }
 
   async function pull() {
-
-    const API_URL =
-      getApiUrl();
-
-    if (
-      pulling ||
-      !API_URL
-    ) return false;
+    if (pulling) {
+      return false;
+    }
 
     pulling = true;
 
+    const previous =
+      suppressAutoPush;
+
+    suppressAutoPush = true;
+
     try {
+      const cloud =
+        await fetchCloudData();
 
-      const response =
-        await fetch(
-          API_URL + '?t=' + Date.now(),
-          {
-            method: 'GET',
-            cache: 'no-store'
-          }
-        );
+      writeLocal(
+        cloud.points,
+        cloud.benches
+      );
 
-      if (!response.ok) {
-        throw new Error(
-          'HTTP ' + response.status
-        );
-      }
-
-      const data =
-        await response.json();
-
-      if (data.error) {
-        throw new Error(
-          data.error
-        );
-      }
-
-      if (
-        Array.isArray(data.points)
-      ) {
-
-        localStorage.setItem(
-          XY_KEY,
-          JSON.stringify(
-            data.points.map(
-              normalizePoint
-            )
-          )
-        );
-
-        window.dispatchEvent(
-          new Event('survey-cloud-updated')
-        );
-
-      }
-
-      if (
-        Array.isArray(data.benches)
-      ) {
-
-        localStorage.setItem(
-          Z_KEY,
-          JSON.stringify(
-            data.benches.map(
-              normalizeBench
-            )
-          )
-        );
-
-      }
+      initialized = true;
 
       window.dispatchEvent(
         new CustomEvent(
@@ -195,8 +216,14 @@
         )
       );
 
+      window.dispatchEvent(
+        new CustomEvent(
+          'survey-cloud-online'
+        )
+      );
+
       console.log(
-        '☁️ Survey Constants: تم السحب من Google Sheets'
+        '☁️ تم سحب البيانات من Google Sheets'
       );
 
       return true;
@@ -204,46 +231,43 @@
     } catch (error) {
 
       console.warn(
-        '☁️ Survey Constants GET:',
-        error.message || error
+        '☁️ GET:',
+        error?.message || error
       );
 
       return false;
 
     } finally {
+      suppressAutoPush =
+        previous;
 
       pulling = false;
-
     }
-
   }
 
-  async function push() {
-
+  async function pushData(
+    points,
+    benches
+  ) {
     const API_URL =
       getApiUrl();
 
     if (
       pushing ||
       !API_URL
-    ) return false;
+    ) {
+      return false;
+    }
 
     pushing = true;
 
     try {
-
       const payload = {
-
         points:
-          getXY().map(
-            normalizePoint
-          ),
+          points.map(normalizePoint),
 
         benches:
-          getZ().map(
-            normalizeBench
-          )
-
+          benches.map(normalizeBench)
       };
 
       const response =
@@ -251,10 +275,12 @@
           API_URL,
           {
             method: 'POST',
+
             headers: {
               'Content-Type':
                 'text/plain;charset=utf-8'
             },
+
             body:
               JSON.stringify(payload)
           }
@@ -269,20 +295,12 @@
       const data =
         await response.json();
 
-      if (
-        data.ok === false
-      ) {
-
+      if (data.ok === false) {
         throw new Error(
           data.error ||
           'فشل الحفظ'
         );
-
       }
-
-      console.log(
-        '☁️ Survey Constants: تم الرفع إلى Google Sheets'
-      );
 
       window.dispatchEvent(
         new CustomEvent(
@@ -290,93 +308,397 @@
         )
       );
 
+      console.log(
+        '☁️ تم رفع البيانات إلى Google Sheets'
+      );
+
       return true;
 
     } catch (error) {
 
       console.warn(
-        '☁️ Survey Constants POST:',
-        error.message || error
+        '☁️ POST:',
+        error?.message || error
       );
 
       return false;
 
     } finally {
-
       pushing = false;
+    }
+  }
 
+  /*
+   * إضافة أو تعديل ثابت X/Y فقط.
+   *
+   * مهم:
+   * لا نأخذ نسخة الجهاز القديمة ونرفعها.
+   * نسحب أحدث نسخة من Google Sheets أولًا،
+   * ثم نطبق التغيير المطلوب فقط.
+   */
+  async function savePointChange(
+    item,
+    oldNumber = null
+  ) {
+    if (
+      pulling ||
+      pushing
+    ) {
+      return false;
     }
 
-  }
+    const previous =
+      suppressAutoPush;
 
-  function schedulePush() {
+    suppressAutoPush = true;
 
-    clearTimeout(
-      pushTimer
-    );
+    try {
+      const cloud =
+        await fetchCloudData();
 
-    pushTimer =
-      setTimeout(
-        function () {
-          push();
-        },
-        700
-      );
+      let points =
+        cloud.points.map(normalizePoint);
 
-  }
+      const newNumber =
+        String(
+          item?.number ?? ''
+        ).trim();
 
-  const originalSetItem =
-    localStorage.setItem.bind(
-      localStorage
-    );
+      const oldKey =
+        String(
+          oldNumber ?? ''
+        ).trim();
 
-  const originalRemoveItem =
-    localStorage.removeItem.bind(
-      localStorage
-    );
-
-  localStorage.setItem =
-    function (key, value) {
-
-      originalSetItem(
-        key,
-        value
-      );
-
-      if (
-        !pulling &&
-        (
-          key === XY_KEY ||
-          key === Z_KEY
-        )
-      ) {
-
-        schedulePush();
-
+      if (!newNumber) {
+        throw new Error(
+          'رقم الثابت غير موجود'
+        );
       }
 
-    };
-
-  localStorage.removeItem =
-    function (key) {
-
-      originalRemoveItem(
-        key
-      );
-
       if (
-        !pulling &&
-        (
-          key === XY_KEY ||
-          key === Z_KEY
-        )
+        oldKey &&
+        oldKey !== newNumber
       ) {
-
-        schedulePush();
-
+        points =
+          points.filter(
+            point =>
+              String(
+                point.number ?? ''
+              ).trim() !== oldKey
+          );
       }
 
-    };
+      const index =
+        points.findIndex(
+          point =>
+            String(
+              point.number ?? ''
+            ).trim() === newNumber
+        );
+
+      if (index >= 0) {
+        points[index] =
+          normalizePoint(item);
+      } else {
+        points.push(
+          normalizePoint(item)
+        );
+      }
+
+      writeLocal(
+        points,
+        cloud.benches
+      );
+
+      initialized = true;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          'survey-cloud-updated'
+        )
+      );
+
+      return await pushData(
+        points,
+        cloud.benches
+      );
+
+    } catch (error) {
+
+      console.warn(
+        '☁️ savePointChange:',
+        error?.message || error
+      );
+
+      return false;
+
+    } finally {
+      suppressAutoPush =
+        previous;
+    }
+  }
+
+  /*
+   * إضافة أو تعديل ثابت Z فقط.
+   */
+  async function saveBenchChange(
+    item,
+    oldNumber = null
+  ) {
+    if (
+      pulling ||
+      pushing
+    ) {
+      return false;
+    }
+
+    const previous =
+      suppressAutoPush;
+
+    suppressAutoPush = true;
+
+    try {
+      const cloud =
+        await fetchCloudData();
+
+      let benches =
+        cloud.benches.map(normalizeBench);
+
+      const newNumber =
+        String(
+          item?.id ?? ''
+        ).trim();
+
+      const oldKey =
+        String(
+          oldNumber ?? ''
+        ).trim();
+
+      if (!newNumber) {
+        throw new Error(
+          'رقم الثابت غير موجود'
+        );
+      }
+
+      if (
+        oldKey &&
+        oldKey !== newNumber
+      ) {
+        benches =
+          benches.filter(
+            bench =>
+              String(
+                bench.id ?? ''
+              ).trim() !== oldKey
+          );
+      }
+
+      const index =
+        benches.findIndex(
+          bench =>
+            String(
+              bench.id ?? ''
+            ).trim() === newNumber
+        );
+
+      if (index >= 0) {
+        benches[index] =
+          normalizeBench(item);
+      } else {
+        benches.push(
+          normalizeBench(item)
+        );
+      }
+
+      writeLocal(
+        cloud.points,
+        benches
+      );
+
+      initialized = true;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          'survey-cloud-updated'
+        )
+      );
+
+      return await pushData(
+        cloud.points,
+        benches
+      );
+
+    } catch (error) {
+
+      console.warn(
+        '☁️ saveBenchChange:',
+        error?.message || error
+      );
+
+      return false;
+
+    } finally {
+      suppressAutoPush =
+        previous;
+    }
+  }
+
+  /*
+   * حذف ثابت X/Y.
+   */
+  async function deletePoint(
+    number
+  ) {
+    if (
+      pulling ||
+      pushing
+    ) {
+      return false;
+    }
+
+    const previous =
+      suppressAutoPush;
+
+    suppressAutoPush = true;
+
+    try {
+      const cloud =
+        await fetchCloudData();
+
+      const key =
+        String(
+          number ?? ''
+        ).trim();
+
+      const points =
+        cloud.points
+          .map(normalizePoint)
+          .filter(
+            point =>
+              String(
+                point.number ?? ''
+              ).trim() !== key
+          );
+
+      writeLocal(
+        points,
+        cloud.benches
+      );
+
+      initialized = true;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          'survey-cloud-updated'
+        )
+      );
+
+      return await pushData(
+        points,
+        cloud.benches
+      );
+
+    } catch (error) {
+
+      console.warn(
+        '☁️ deletePoint:',
+        error?.message || error
+      );
+
+      return false;
+
+    } finally {
+      suppressAutoPush =
+        previous;
+    }
+  }
+
+  /*
+   * حذف ثابت Z.
+   */
+  async function deleteBench(
+    number
+  ) {
+    if (
+      pulling ||
+      pushing
+    ) {
+      return false;
+    }
+
+    const previous =
+      suppressAutoPush;
+
+    suppressAutoPush = true;
+
+    try {
+      const cloud =
+        await fetchCloudData();
+
+      const key =
+        String(
+          number ?? ''
+        ).trim();
+
+      const benches =
+        cloud.benches
+          .map(normalizeBench)
+          .filter(
+            bench =>
+              String(
+                bench.id ?? ''
+              ).trim() !== key
+          );
+
+      writeLocal(
+        cloud.points,
+        benches
+      );
+
+      initialized = true;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          'survey-cloud-updated'
+        )
+      );
+
+      return await pushData(
+        cloud.points,
+        benches
+      );
+
+    } catch (error) {
+
+      console.warn(
+        '☁️ deleteBench:',
+        error?.message || error
+      );
+
+      return false;
+
+    } finally {
+      suppressAutoPush =
+        previous;
+    }
+  }
+
+  /*
+   * مزامنة يدوية:
+   * سحب فقط من Google Sheets.
+   */
+  async function sync() {
+    return await pull();
+  }
+
+  /*
+   * منع أي رفع تلقائي قديم.
+   * الحفظ الآن يتم من دوال التغيير الآمنة.
+   */
+  function suspendAutoPush(value) {
+    suppressAutoPush =
+      !!value;
+  }
 
   window.SurveyCloud = {
 
@@ -384,11 +706,27 @@
       return getApiUrl();
     },
 
-    pull: pull,
+    pull,
 
-    push: push,
+    sync,
 
-    sync: pull,
+    push: async function () {
+      /*
+       * لا نستخدم push القديم المباشر،
+       * لأن رفع نسخة محلية قديمة خطر.
+       */
+      return false;
+    },
+
+    savePointChange,
+
+    saveBenchChange,
+
+    deletePoint,
+
+    deleteBench,
+
+    suspendAutoPush,
 
     reloadConfig: function () {
       console.log(
@@ -396,16 +734,34 @@
         getApiUrl()
       );
     }
-
   };
 
+  /*
+   * مهم جدًا:
+   * لم نعد نرفع localStorage تلقائيًا عند كل setItem.
+   * بذلك الحفظ المحلي لا يستطيع إرسال نسخة قديمة
+   * إلى Google Sheets بالخطأ.
+   */
+  localStorage.setItem =
+    function (key, value) {
+      originalSetItem(
+        key,
+        value
+      );
+    };
+
+  localStorage.removeItem =
+    function (key) {
+      originalRemoveItem(
+        key
+      );
+    };
+
   setTimeout(
-    function () {
-
+    async function () {
       if (getApiUrl()) {
-        pull();
+        await pull();
       }
-
     },
     500
   );

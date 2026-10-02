@@ -557,7 +557,7 @@ function openEdit(index) {
 
 }
 
-function deleteConstant(index) {
+async function deleteConstant(index) {
 
   const item =
     constants[index]
@@ -571,20 +571,80 @@ function deleteConstant(index) {
 
   if (!confirmed) return
 
-  constants.splice(index, 1)
+  const number =
+    item.number
 
-  photos =
-    photos.filter(photo =>
-      String(photo.pointNumber) !==
-      String(item.number)
+  let synced = false
+
+  try {
+
+    if (
+      window.SurveyCloud &&
+      typeof window.SurveyCloud.deleteBench ===
+        'function'
+    ) {
+
+      synced =
+        await window.SurveyCloud.deleteBench(
+          number
+        )
+
+      constants =
+        readArray(STORAGE_KEY)
+
+    } else {
+
+      constants =
+        constants.filter(
+          (_, i) => i !== index
+        )
+
+      saveArray(
+        STORAGE_KEY,
+        constants
+      )
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      'Cloud delete Z:',
+      error
     )
 
-  saveArray(STORAGE_KEY, constants)
-  saveArray(PHOTO_KEY, photos)
+  }
+
+  /*
+   * الصور محلية فقط.
+   */
+  photos =
+    photos.filter(
+      photo =>
+        String(photo.pointNumber) !==
+        String(number)
+    )
+
+  saveArray(
+    PHOTO_KEY,
+    photos
+  )
 
   performSearch()
 
-  showToast('تم حذف الثابت')
+  if (synced) {
+
+    showToast(
+      'تم حذف الثابت ومزامنته بنجاح'
+    )
+
+  } else {
+
+    showToast(
+      'تم حذف الثابت من الجهاز — تعذرت المزامنة السحابية'
+    )
+
+  }
 
 }
 
@@ -730,10 +790,9 @@ async function saveCurrentPoint() {
   }
 
   const item = {
-    number,
-    villa,
-    z,
-    description
+    id: number,
+    desc: description,
+    Z: z
   }
 
   const oldNumber =
@@ -741,43 +800,9 @@ async function saveCurrentPoint() {
       ? constants[editingIndex]?.number
       : null
 
-  if (editingIndex === -1) {
-
-    constants.push(item)
-
-  } else {
-
-    constants[editingIndex] =
-      item
-
-    if (
-      oldNumber &&
-      String(oldNumber) !== String(number)
-    ) {
-
-      photos =
-        photos.map(photo => {
-
-          if (
-            String(photo.pointNumber) ===
-            String(oldNumber)
-          ) {
-
-            return {
-              ...photo,
-              pointNumber: number
-            }
-
-          }
-
-          return photo
-
-        })
-
-    }
-
-  }
-
+  /*
+   * الصور محلية فقط.
+   */
   try {
 
     for (
@@ -802,10 +827,97 @@ async function saveCurrentPoint() {
 
   }
 
-  saveArray(
-    STORAGE_KEY,
-    constants
-  )
+  let synced = false
+
+  try {
+
+    if (
+      window.SurveyCloud &&
+      typeof window.SurveyCloud.saveBenchChange ===
+        'function'
+    ) {
+
+      synced =
+        await window.SurveyCloud.saveBenchChange(
+          item,
+          oldNumber
+        )
+
+      /*
+       * تمت كتابة أحدث نسخة من Google Sheets
+       * إلى localStorage.
+       */
+      constants =
+        readArray(STORAGE_KEY)
+
+    } else {
+
+      /*
+       * احتياطي في حالة عدم وجود المزامنة.
+       */
+      const localItem = {
+        number,
+        villa,
+        z,
+        description
+      }
+
+      if (editingIndex === -1) {
+
+        constants.push(localItem)
+
+      } else {
+
+        constants[editingIndex] =
+          localItem
+
+      }
+
+      saveArray(
+        STORAGE_KEY,
+        constants
+      )
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      'Cloud sync after Z save:',
+      error
+    )
+
+  }
+
+  /*
+   * تحديث رقم الصور محليًا إذا تم تغيير الرقم.
+   */
+  if (
+    editingIndex >= 0 &&
+    oldNumber &&
+    String(oldNumber) !== String(number)
+  ) {
+
+    photos =
+      photos.map(photo => {
+
+        if (
+          String(photo.pointNumber) ===
+          String(oldNumber)
+        ) {
+
+          return {
+            ...photo,
+            pointNumber: number
+          }
+
+        }
+
+        return photo
+
+      })
+
+  }
 
   saveArray(
     PHOTO_KEY,
@@ -820,9 +932,19 @@ async function saveCurrentPoint() {
 
   performSearch()
 
-  showToast(
-    'تم حفظ الثابت بنجاح'
-  )
+  if (synced) {
+
+    showToast(
+      'تم حفظ الثابت ومزامنته بنجاح'
+    )
+
+  } else {
+
+    showToast(
+      'تم حفظ الثابت على الجهاز — تعذرت المزامنة السحابية'
+    )
+
+  }
 
 }
 
