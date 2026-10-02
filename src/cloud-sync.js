@@ -19,7 +19,7 @@
         );
 
       return (
-        settings.apiUrl || ''
+        settings.apiUrl || 'https://script.google.com/macros/s/AKfycbwtXRr5GaMurhsnz9pqvpqdcytmsceuDrhYbkxcl7_I8x6uQ07yIpSCdA_HdbCOjMxD/exec'
       ).trim();
 
     } catch {
