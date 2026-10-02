@@ -61,11 +61,11 @@
 
     return {
 
-      num:
-        p.num != null
-          ? p.num
-          : (p.number != null
-              ? p.number
+      number:
+        p.number != null
+          ? p.number
+          : (p.num != null
+              ? p.num
               : ''),
 
       villa:
@@ -166,6 +166,10 @@
               normalizePoint
             )
           )
+        );
+
+        window.dispatchEvent(
+          new Event('survey-cloud-updated')
         );
 
       }

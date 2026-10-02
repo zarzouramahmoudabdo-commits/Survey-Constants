@@ -5,6 +5,12 @@ const PHOTO_KEY = 'survey_constant_photos'
 
 let constants = readArray(STORAGE_KEY)
 let photos = readArray(PHOTO_KEY)
+
+window.addEventListener('survey-cloud-updated', () => {
+  constants = readArray(STORAGE_KEY)
+  photos = readArray(PHOTO_KEY)
+  render()
+})
 let editingIndex = -1
 
 const app = document.querySelector('#app')
