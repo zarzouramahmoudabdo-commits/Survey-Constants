@@ -10,6 +10,84 @@
 
 <body>
 
+<div id="loginScreen" style="
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  background:#101820;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+">
+
+  <div style="
+    width:100%;
+    max-width:420px;
+    background:#fff;
+    border-radius:20px;
+    padding:28px;
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+  ">
+
+    <div style="font-size:45px;margin-bottom:10px;">🔐</div>
+
+    <h2 style="margin:0 0 8px;">
+      دخول لوحة الأدمن
+    </h2>
+
+    <p style="margin:0 0 20px;color:#666;">
+      أدخل كلمة مرور الأدمن للمتابعة
+    </p>
+
+    <input
+      id="adminPassword"
+      type="password"
+      placeholder="كلمة المرور"
+      autocomplete="off"
+      style="
+        width:100%;
+        padding:14px;
+        border:1px solid #ccc;
+        border-radius:12px;
+        font-size:17px;
+        text-align:center;
+        box-sizing:border-box;
+        margin-bottom:12px;
+      "
+    >
+
+    <button
+      id="loginBtn"
+      style="
+        width:100%;
+        padding:14px;
+        border:0;
+        border-radius:12px;
+        background:#101820;
+        color:white;
+        font-size:17px;
+        cursor:pointer;
+      "
+    >
+      دخول
+    </button>
+
+    <div
+      id="loginError"
+      style="
+        color:#d32f2f;
+        margin-top:12px;
+        min-height:20px;
+      "
+    ></div>
+
+  </div>
+</div>
+
+<div id="adminContent" style="display:none;">
+
 <div class="admin-page">
 
   <header class="page-header">
@@ -49,6 +127,57 @@
 
       <div class="admin-card-box">
 
+        <h3>☁️ Google Sheets</h3>
+
+        <p>
+          ضع رابط Web App الخاص بـ Google Apps Script
+          ليتم استخدام نفس البيانات على جميع الأجهزة.
+        </p>
+
+        <input
+          id="apiUrl"
+          type="url"
+          placeholder="https://script.google.com/macros/s/.../exec"
+          style="
+            width:100%;
+            padding:12px;
+            box-sizing:border-box;
+            border:1px solid #ccc;
+            border-radius:10px;
+            margin:8px 0 10px;
+            direction:ltr;
+            text-align:left;
+          "
+        >
+
+        <button
+          id="saveApiBtn"
+          class="admin-action primary"
+        >
+          💾 حفظ رابط API
+        </button>
+
+        <button
+          id="syncBtn"
+          class="admin-action"
+        >
+          🔄 مزامنة الآن
+        </button>
+
+        <p
+          id="apiStatus"
+          style="
+            margin-top:12px;
+            line-height:1.8;
+          "
+        >
+          لم يتم اختبار الاتصال
+        </p>
+
+      </div>
+
+      <div class="admin-card-box">
+
         <h3>💾 النسخ الاحتياطي</h3>
 
         <p>
@@ -81,24 +210,6 @@
 
       <div class="admin-card-box">
 
-        <h3>☁️ Google Sheets</h3>
-
-        <p>
-          المزامنة السحابية تحتاج إعداد حساب Google
-          وربط API آمن. لا يوجد اتصال سحابي حاليًا.
-        </p>
-
-        <button
-          id="sheetsBtn"
-          class="admin-action"
-        >
-          إعداد المزامنة
-        </button>
-
-      </div>
-
-      <div class="admin-card-box">
-
         <h3>📊 حالة التخزين</h3>
 
         <p id="storageInfo">
@@ -110,6 +221,24 @@
           class="admin-action"
         >
           تحديث الحالة
+        </button>
+
+      </div>
+
+      <div class="admin-card-box">
+
+        <h3>🔒 الأدمن</h3>
+
+        <p>
+          صفحة الأدمن محمية بكلمة مرور.
+          استخدم تسجيل الخروج عند الانتهاء.
+        </p>
+
+        <button
+          id="logoutBtn"
+          class="admin-action danger"
+        >
+          🚪 تسجيل الخروج
         </button>
 
       </div>
@@ -151,33 +280,48 @@
 
 </div>
 
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
 <script>
 
-const XY_KEY =
-  'survey_constants_xy'
+const ADMIN_PASSWORD = 'MAT7467213#';
 
-const Z_KEY =
-  'survey_constants_z'
+const XY_KEY = 'survey_constants_xy';
+const Z_KEY = 'survey_constants_z';
+const PHOTO_KEY = 'survey_constant_photos';
+const SETTINGS_KEY = 'survey_constants_settings';
 
-const PHOTO_KEY =
-  'survey_constant_photos'
+const loginScreen =
+  document.getElementById('loginScreen');
 
-const SETTINGS_KEY =
-  'survey_constants_settings'
+const adminContent =
+  document.getElementById('adminContent');
+
+const passwordInput =
+  document.getElementById('adminPassword');
+
+const loginError =
+  document.getElementById('loginError');
+
+const apiUrlInput =
+  document.getElementById('apiUrl');
+
+const apiStatus =
+  document.getElementById('apiStatus');
 
 const xyCount =
-  document.getElementById('xyCount')
+  document.getElementById('xyCount');
 
 const zCount =
-  document.getElementById('zCount')
+  document.getElementById('zCount');
 
 const storageInfo =
-  document.getElementById('storageInfo')
+  document.getElementById('storageInfo');
 
 const toast =
-  document.getElementById('toast')
+  document.getElementById('toast');
 
 function readArray(key) {
 
@@ -186,72 +330,80 @@ function readArray(key) {
     const data =
       JSON.parse(
         localStorage.getItem(key) || '[]'
-      )
+      );
 
     return Array.isArray(data)
       ? data
-      : []
+      : [];
 
   } catch {
 
-    return []
+    return [];
 
   }
 
 }
 
+function readSettings() {
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(SETTINGS_KEY) || '{}'
+    );
+
+  } catch {
+
+    return {};
+
+  }
+
+}
+
+function saveSettings(settings) {
+
+  localStorage.setItem(
+    SETTINGS_KEY,
+    JSON.stringify(settings)
+  );
+
+}
+
 function showToast(message) {
 
-  toast.textContent =
-    message
+  toast.textContent = message;
 
-  toast.classList.remove(
-    'hidden'
-  )
+  toast.classList.remove('hidden');
 
-  clearTimeout(
-    window.adminToastTimer
-  )
+  clearTimeout(window.adminToastTimer);
 
   window.adminToastTimer =
     setTimeout(() => {
 
-      toast.classList.add(
-        'hidden'
-      )
+      toast.classList.add('hidden');
 
-    }, 1800)
+    }, 2200);
 
 }
 
 function updateStats() {
 
-  const xy =
-    readArray(XY_KEY)
+  const xy = readArray(XY_KEY);
+  const z = readArray(Z_KEY);
+  const photos = readArray(PHOTO_KEY);
 
-  const z =
-    readArray(Z_KEY)
-
-  const photos =
-    readArray(PHOTO_KEY)
-
-  xyCount.textContent =
-    xy.length
-
-  zCount.textContent =
-    z.length
+  xyCount.textContent = xy.length;
+  zCount.textContent = z.length;
 
   const totalChars =
     JSON.stringify({
       xy,
       z,
       photos
-    }).length
+    }).length;
 
   const approxKb =
-    Math.round(
-      totalChars / 1024
-    )
+    Math.round(totalChars / 1024);
 
   storageInfo.innerHTML = `
     X / Y:
@@ -265,19 +417,17 @@ function updateStats() {
     <br>
     الحجم التقريبي:
     <strong>${approxKb} KB</strong>
-  `
+  `;
 
 }
 
 function buildBackup() {
 
-  const backup = {
+  return {
 
-    app:
-      'Survey Constants',
+    app: 'Survey Constants',
 
-    version:
-      '1.0.0',
+    version: '1.0.0',
 
     createdAt:
       new Date().toISOString(),
@@ -294,34 +444,11 @@ function buildBackup() {
     settings:
       readSettings()
 
-  }
-
-  return backup
+  };
 
 }
 
-function readSettings() {
-
-  try {
-
-    return JSON.parse(
-      localStorage.getItem(
-        SETTINGS_KEY
-      ) || '{}'
-    )
-
-  } catch {
-
-    return {}
-
-  }
-
-}
-
-function downloadFile(
-  filename,
-  content
-) {
+function downloadFile(filename, content) {
 
   const blob =
     new Blob(
@@ -330,42 +457,276 @@ function downloadFile(
         type:
           'application/json;charset=utf-8'
       }
-    )
+    );
 
   const url =
-    URL.createObjectURL(blob)
+    URL.createObjectURL(blob);
 
   const link =
-    document.createElement('a')
+    document.createElement('a');
 
-  link.href = url
-  link.download = filename
+  link.href = url;
+  link.download = filename;
 
-  document.body.appendChild(link)
+  document.body.appendChild(link);
 
-  link.click()
+  link.click();
 
-  link.remove()
+  link.remove();
 
   setTimeout(() => {
-
-    URL.revokeObjectURL(url)
-
-  }, 1000)
+    URL.revokeObjectURL(url);
+  }, 1000);
 
 }
+
+async function testApi() {
+
+  const url =
+    apiUrlInput.value.trim();
+
+  if (!url) {
+
+    apiStatus.innerHTML =
+      '⚠️ اكتب رابط API أولًا';
+
+    return;
+
+  }
+
+  apiStatus.innerHTML =
+    '⏳ جاري اختبار الاتصال...';
+
+  try {
+
+    const response =
+      await fetch(
+        url + '?t=' + Date.now(),
+        {
+          method: 'GET',
+          cache: 'no-store'
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        'HTTP ' + response.status
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const points =
+      Array.isArray(data.points)
+        ? data.points.length
+        : 0;
+
+    const benches =
+      Array.isArray(data.benches)
+        ? data.benches.length
+        : 0;
+
+    apiStatus.innerHTML = `
+      <span style="color:green;font-weight:bold;">
+        🟢 الاتصال ناجح
+      </span>
+      <br>
+      الثوابت: <strong>${points}</strong>
+      <br>
+      المناسيب: <strong>${benches}</strong>
+    `;
+
+  } catch (error) {
+
+    apiStatus.innerHTML = `
+      <span style="color:#d32f2f;font-weight:bold;">
+        🔴 فشل الاتصال
+      </span>
+      <br>
+      ${error.message || error}
+    `;
+
+  }
+
+}
+
+document
+  .getElementById('loginBtn')
+  .onclick = login;
+
+passwordInput
+  .addEventListener(
+    'keydown',
+    event => {
+
+      if (event.key === 'Enter') {
+        login();
+      }
+
+    }
+  );
+
+function login() {
+
+  if (
+    passwordInput.value ===
+    ADMIN_PASSWORD
+  ) {
+
+    sessionStorage.setItem(
+      'survey_admin_authenticated',
+      '1'
+    );
+
+    loginScreen.style.display =
+      'none';
+
+    adminContent.style.display =
+      'block';
+
+    const settings =
+      readSettings();
+
+    apiUrlInput.value =
+      settings.apiUrl || '';
+
+    updateStats();
+
+    if (apiUrlInput.value) {
+      testApi();
+    }
+
+  } else {
+
+    loginError.textContent =
+      '❌ كلمة المرور غير صحيحة';
+
+    passwordInput.value = '';
+    passwordInput.focus();
+
+  }
+
+}
+
+if (
+  sessionStorage.getItem(
+    'survey_admin_authenticated'
+  ) === '1'
+) {
+
+  loginScreen.style.display =
+    'none';
+
+  adminContent.style.display =
+    'block';
+
+  const settings =
+    readSettings();
+
+  apiUrlInput.value =
+    settings.apiUrl || '';
+
+  updateStats();
+
+  if (apiUrlInput.value) {
+    testApi();
+  }
+
+}
+
+document
+  .getElementById('saveApiBtn')
+  .onclick = async () => {
+
+    let url =
+      apiUrlInput.value.trim();
+
+    if (!url) {
+
+      apiStatus.innerHTML =
+        '⚠️ رابط API فارغ';
+
+      return;
+
+    }
+
+    if (!/^https:\/\/.+\/exec(?:\?.*)?$/i.test(url)) {
+
+      apiStatus.innerHTML =
+        '⚠️ تأكد أن الرابط رابط Web App وينتهي بـ /exec';
+
+      return;
+
+    }
+
+    const settings =
+      readSettings();
+
+    settings.apiUrl = url;
+
+    saveSettings(settings);
+
+    showToast(
+      'تم حفظ رابط API'
+    );
+
+    await testApi();
+
+    if (
+      window.SurveyCloud &&
+      typeof window.SurveyCloud.reloadConfig === 'function'
+    ) {
+
+      window.SurveyCloud.reloadConfig();
+
+    }
+
+  };
+
+document
+  .getElementById('syncBtn')
+  .onclick = async () => {
+
+    if (
+      !window.SurveyCloud
+    ) {
+
+      alert(
+        'نظام المزامنة غير متاح حاليًا'
+      );
+
+      return;
+
+    }
+
+    apiStatus.innerHTML =
+      '⏳ جاري المزامنة...';
+
+    await window.SurveyCloud.sync();
+
+    updateStats();
+
+    apiStatus.innerHTML =
+      '<span style="color:green;font-weight:bold;">🟢 تمت المزامنة</span>';
+
+    showToast(
+      'تمت المزامنة'
+    );
+
+  };
 
 document
   .getElementById('exportBtn')
   .onclick = () => {
 
     const backup =
-      buildBackup()
+      buildBackup();
 
     const date =
       new Date()
         .toISOString()
-        .slice(0, 10)
+        .slice(0, 10);
 
     downloadFile(
       `Survey-Constants-Backup-${date}.json`,
@@ -374,13 +735,13 @@ document
         null,
         2
       )
-    )
+    );
 
     showToast(
       'تم إنشاء النسخة الاحتياطية'
-    )
+    );
 
-  }
+  };
 
 document
   .getElementById('importBtn')
@@ -388,9 +749,9 @@ document
 
     document
       .getElementById('importFile')
-      .click()
+      .click();
 
-  }
+  };
 
 document
   .getElementById('importFile')
@@ -399,12 +760,12 @@ document
     event => {
 
       const file =
-        event.target.files[0]
+        event.target.files[0];
 
-      if (!file) return
+      if (!file) return;
 
       const reader =
-        new FileReader()
+        new FileReader();
 
       reader.onload = () => {
 
@@ -413,52 +774,40 @@ document
           const data =
             JSON.parse(
               reader.result
-            )
+            );
 
           if (
             !data ||
-            typeof data !== 'object'
-          ) {
-
-            throw new Error(
-              'Invalid backup'
-            )
-
-          }
-
-          if (
+            typeof data !== 'object' ||
             !Array.isArray(data.xy) ||
             !Array.isArray(data.z)
           ) {
 
             throw new Error(
-              'Invalid backup structure'
-            )
+              'Invalid backup'
+            );
 
           }
 
           const confirmed =
             confirm(
               'سيتم استبدال البيانات الحالية بالنسخة الاحتياطية. هل تريد المتابعة؟'
-            )
+            );
 
           if (!confirmed) {
-
-            event.target.value = ''
-
-            return
-
+            event.target.value = '';
+            return;
           }
 
           localStorage.setItem(
             XY_KEY,
             JSON.stringify(data.xy)
-          )
+          );
 
           localStorage.setItem(
             Z_KEY,
             JSON.stringify(data.z)
-          )
+          );
 
           localStorage.setItem(
             PHOTO_KEY,
@@ -467,109 +816,100 @@ document
                 ? data.photos
                 : []
             )
-          )
+          );
 
-          localStorage.setItem(
-            SETTINGS_KEY,
-            JSON.stringify(
-              data.settings || {}
-            )
-          )
+          if (data.settings) {
 
-          updateStats()
+            localStorage.setItem(
+              SETTINGS_KEY,
+              JSON.stringify(data.settings)
+            );
+
+          }
+
+          updateStats();
 
           showToast(
             'تم استيراد النسخة بنجاح'
-          )
+          );
 
         } catch {
 
           alert(
             'ملف النسخة الاحتياطية غير صالح'
-          )
+          );
 
         }
 
-        event.target.value = ''
+        event.target.value = '';
 
-      }
+      };
 
-      reader.readAsText(file)
+      reader.readAsText(file);
 
     }
-  )
+  );
 
 document
   .getElementById('clearBtn')
   .onclick = () => {
 
-    const firstConfirm =
-      confirm(
+    if (
+      !confirm(
         'تحذير: سيتم حذف جميع الثوابت والصور من الجهاز. هل أنت متأكد؟'
       )
+    ) return;
 
-    if (!firstConfirm) return
-
-    const secondConfirm =
-      confirm(
+    if (
+      !confirm(
         'تأكيد نهائي: هل تريد حذف كل البيانات؟'
       )
+    ) return;
 
-    if (!secondConfirm) return
+    localStorage.removeItem(XY_KEY);
+    localStorage.removeItem(Z_KEY);
+    localStorage.removeItem(PHOTO_KEY);
 
-    localStorage.removeItem(
-      XY_KEY
-    )
-
-    localStorage.removeItem(
-      Z_KEY
-    )
-
-    localStorage.removeItem(
-      PHOTO_KEY
-    )
-
-    updateStats()
+    updateStats();
 
     showToast(
       'تم حذف كل البيانات'
-    )
+    );
 
-  }
+  };
 
 document
-  .getElementById('sheetsBtn')
+  .getElementById('logoutBtn')
   .onclick = () => {
 
-    alert(
-      'المزامنة مع Google Sheets تحتاج ربط حساب Google وإعداد API آمن. سيتم تنفيذ الربط بعد تجهيز الاتصال السحابي.'
-    )
+    sessionStorage.removeItem(
+      'survey_admin_authenticated'
+    );
 
-  }
+    location.reload();
+
+  };
 
 document
   .getElementById('refreshBtn')
-  .onclick =
-  updateStats
+  .onclick = updateStats;
 
 document
   .getElementById('refreshStorageBtn')
-  .onclick =
-  updateStats
+  .onclick = updateStats;
 
 document
   .getElementById('backBtn')
   .onclick = () => {
 
     window.location.href =
-      './index.html'
+      './index.html';
 
-  }
-
-updateStats()
+  };
 
 </script>
 
-  <script src="./src/cloud-sync.js"></script>
+<script src="./src/cloud-sync.js"></script>
+
 </body>
 </html>
