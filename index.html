@@ -122,9 +122,9 @@
         <small>المزامنة السحابية</small>
       </div>
 
-      <div class="sync-status">
+      <div class="sync-status" id="cloudStatus">
         <span class="sync-offline-dot"></span>
-        غير متصل
+        جاري الاتصال...
       </div>
 
     </section>
@@ -330,6 +330,10 @@ function searchAll() {
           Y: ${escapeHtml(item.y)}
         </div>
 
+        <div class="home-result-description">
+          ${escapeHtml(item.description || 'بدون وصف')}
+        </div>
+
       </button>
     `
 
@@ -357,6 +361,10 @@ function searchAll() {
 
         <div class="home-result-values">
           Z: ${escapeHtml(item.z)}
+        </div>
+
+        <div class="home-result-description">
+          ${escapeHtml(item.description || 'بدون وصف')}
         </div>
 
       </button>
@@ -422,6 +430,45 @@ document
 updateStats()
 
 window.addEventListener('pageshow', updateStats)
+
+function updateCloudStatus(text, online) {
+  const el = document.getElementById('cloudStatus')
+  if (!el) return
+
+  el.innerHTML = online
+    ? '<span class="sync-online-dot"></span> متصل'
+    : '<span class="sync-offline-dot"></span> غير متصل'
+}
+
+async function checkCloudStatus() {
+  if (
+    !window.SurveyCloud ||
+    typeof window.SurveyCloud.pull !== 'function'
+  ) {
+    updateCloudStatus('غير متصل', false)
+    return
+  }
+
+  try {
+    const ok = await window.SurveyCloud.pull()
+    updateCloudStatus(ok ? 'متصل' : 'غير متصل', ok)
+  } catch (error) {
+    console.warn('Cloud status:', error)
+    updateCloudStatus('غير متصل', false)
+  }
+}
+
+window.addEventListener(
+  'survey-cloud-updated',
+  () => updateCloudStatus('متصل', true)
+)
+
+window.addEventListener(
+  'survey-cloud-synced',
+  () => updateCloudStatus('متصل', true)
+)
+
+setTimeout(checkCloudStatus, 1200)
 
 </script>
 

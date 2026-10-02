@@ -809,6 +809,18 @@ async function saveCurrentPoint() {
   saveArray(STORAGE_KEY, constants)
   saveArray(PHOTO_KEY, photos)
 
+  // رفع البيانات الجديدة إلى Google Sheets
+  try {
+    if (
+      window.SurveyCloud &&
+      typeof window.SurveyCloud.push === 'function'
+    ) {
+      await window.SurveyCloud.push()
+    }
+  } catch (error) {
+    console.warn('Cloud sync after save:', error)
+  }
+
   modal.classList.add('hidden')
 
   clearForm()

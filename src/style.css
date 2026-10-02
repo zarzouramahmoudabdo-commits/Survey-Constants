@@ -1108,3 +1108,45 @@ footer strong {
   }
 
 }
+
+
+/* =========================
+   Google Sheets status
+   ========================= */
+
+.sync-online-dot,
+.sync-offline-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.sync-online-dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.sync-offline-dot {
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.10);
+}
+
+/* =========================
+   Home search description
+   ========================= */
+
+.home-result-description {
+  margin-top: 7px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: right;
+  color: inherit;
+  white-space: normal;
+  word-break: break-word;
+}
