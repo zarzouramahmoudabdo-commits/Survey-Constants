@@ -688,12 +688,24 @@ document
   .getElementById('syncBtn')
   .onclick = async () => {
 
+    let attempts = 0;
+
+    while (
+      (!window.SurveyCloud ||
+       typeof window.SurveyCloud.sync !== 'function') &&
+      attempts < 30
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      attempts++;
+    }
+
     if (
-      !window.SurveyCloud
+      !window.SurveyCloud ||
+      typeof window.SurveyCloud.sync !== 'function'
     ) {
 
       alert(
-        'نظام المزامنة غير متاح حاليًا'
+        'نظام المزامنة لم يتم تحميله'
       );
 
       return;
@@ -909,7 +921,7 @@ document
 
 </script>
 
-<script src="./src/cloud-sync.js"></script>
+<script type="module" src="./src/cloud-sync.js"></script>
 
 </body>
 </html>
